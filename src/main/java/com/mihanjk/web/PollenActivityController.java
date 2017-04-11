@@ -8,16 +8,22 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class PollenActivityController {
     @Autowired
     private PollenActivityService pollenActivityService;
 
-    //TODO: decide what happened with Exception
     @RequestMapping("/getForecast")
-    public List<Forecast> getForecast(@RequestParam(value = "type", defaultValue = "all") String type) throws Exception {
-        return pollenActivityService.getData(type);
+    public Map<String, List<Forecast>> getForecast(@RequestParam(value = "type", defaultValue = "all") String type) throws Exception {
+//        pollenActivityService.updateData(type);
+        //TODO make refactoring
+//        try {
+        return pollenActivityService.parseData(type);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return new HashMap<>();
+//        }
     }
-
 }

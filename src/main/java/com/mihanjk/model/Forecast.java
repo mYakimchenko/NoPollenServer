@@ -2,24 +2,24 @@ package com.mihanjk.model;
 
 public class Forecast {
     private final String name;
-    private final String currentLevelIcon;
-    private final String forecastTomorrowIcon;
+    private final String currentLevel;
+    private final String tomorrowLevel;
 
-    public Forecast(String name, String currentLevelIcon, String forecastTomorrowIcon) {
+    public Forecast(String name, String currentLevel, String tomorrowLevel) {
         this.name = name;
-        this.currentLevelIcon = currentLevelIcon;
-        this.forecastTomorrowIcon = forecastTomorrowIcon;
+        this.currentLevel = currentLevel;
+        this.tomorrowLevel = tomorrowLevel;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getCurrentLevelIcon() {
-        return currentLevelIcon;
+    public String getCurrentLevel() {
+        return currentLevel;
     }
 
-    public String getForecastTomorrowIcon() {
-        return forecastTomorrowIcon;
+    public String getTomorrowLevel() {
+        return tomorrowLevel;
     }
 }
