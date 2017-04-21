@@ -3,10 +3,11 @@ package com.mihanjk.web;
 import com.mihanjk.model.Forecast;
 import com.mihanjk.services.PollenActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
@@ -16,14 +17,11 @@ public class PollenActivityController {
     private PollenActivityService pollenActivityService;
 
     @RequestMapping("/getForecast")
-    public Map<String, List<Forecast>> getForecast(@RequestParam(value = "type", defaultValue = "all") String type) throws Exception {
-//        pollenActivityService.updateData(type);
-        //TODO make refactoring
-//        try {
-        return pollenActivityService.parseData(type);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return new HashMap<>();
-//        }
+    @Scheduled(fixedRate = 600000)
+//    public Map<String, List<Forecast>> getForecast(@RequestParam(value = "type", defaultValue = "all") String type)
+    public Map<String, List<Forecast>> getForecast()
+            throws Exception {
+        System.out.println("Execute request: " + Calendar.getInstance().getTime());
+        return pollenActivityService.getForecastData();
     }
 }

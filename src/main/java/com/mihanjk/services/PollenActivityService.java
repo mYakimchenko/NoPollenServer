@@ -9,7 +9,7 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.URI;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,59 +17,61 @@ import java.util.Map;
 
 @Service
 public class PollenActivityService {
-    private static final Map<String, String> types = new HashMap<>();
-    private static Map<String, Document> docs = new HashMap<>();
+    private static final List<String> types = new ArrayList<>();
 
     static {
-        types.put("tree", "derevev");
-        types.put("cereal", "zlakov");
-        types.put("weed", "sornykh-trav");
-        types.put("spore", "sporonosheniya");
+        types.add("derevev");
+        types.add("zlakov");
+        types.add("sornykh-trav");
+        types.add("sporonosheniya");
     }
 
-    //TOdo add support for multiple regions
     //TODO check which of variable can be final
-    private Map<String, List<Forecast>> data = new HashMap<>();
+    private Map<String, List<Forecast>> forecastData;
+    private Map<String, Document> documents;
+    private Database database;
 
-    public Map<String, List<Forecast>> parseData(String type) throws Exception {
-        //Todo data always adding new request into previous JSON
-        //Todo add exception for unexpected type of request
-        if (!(types.containsKey(type) || type.equals("all"))) {
-            throw new Exception("Unexpected type of request. Available parameters of type: tree, cereal, weed, spore");
+    public Map<String, List<Forecast>> getForecastData() throws Exception {
+        documents = getDocuments();
+        forecastData = parseForecastData();
+
+        //TODO rename
+        InputStream pathToFirebaseJson = getClass().getClassLoader().getResourceAsStream("firebase.json");
+        if (database == null) {
+            database = new Database(pathToFirebaseJson);
         }
 
-        try {
-            //TODO make refactoring
-            String prefix = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
-            if (type.equals("all")) {
-                types.forEach((alias, typeOfSite) -> {
-                    // TODO make handling of exception || replace with for
-                    try {
-                        if (alias.equals("spore")) {
-                            docs.put(alias, Jsoup.connect(prefix + typeOfSite).get());
-                        } else {
-                            docs.put(alias, Jsoup.connect(prefix + "pyleniya-" + typeOfSite).get());
-                        }
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                    }
-                });
-            } else {
-                // TODO why i don't need handling IOException here?
-                if (type.equals("spore")) {
-                    docs.put(type, Jsoup.connect(prefix + types.get(type)).get());
-                } else {
-                    docs.put(type, Jsoup.connect(prefix + "pyleniya-" + types.get(type)).get());
-                }
+        String date = getDateOfForecast(documents.get("derevev"));
+        forecastData.forEach((typeOfForecast, forecasts) -> database.updateData(typeOfForecast, date, forecasts));
+        return forecastData;
+    }
+
+    Map<String, Document> getDocuments() throws Exception {
+        Map<String, Document> docs = new HashMap<>();
+        String prefix = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
+
+        types.forEach(typeOfPollen -> {
+            // TODO make handling of exception || replace with for
+            try {
+                docs.put(typeOfPollen, Jsoup.connect(prefix + getSuffixOfURL(typeOfPollen)).get());
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        });
 
+        return docs;
+    }
+
+    private String getSuffixOfURL(String typeOfPollen) {
+        return typeOfPollen.equals("sporonosheniya") ? typeOfPollen : "pyleniya-" + typeOfPollen;
+    }
+
+    Map<String, List<Forecast>> parseForecastData() {
         // TODO make optimisation
-        docs.forEach((key, value) -> {
+        Map<String, List<Forecast>> data = new HashMap<>();
+        documents.forEach((key, value) -> {
             List<Forecast> listOfForecast = new ArrayList<>();
-            Element table = value.getElementsByTag("table").last();
+            Element table = value.getElementsByTag("table").get(1);
             Elements rows = table.getElementsByTag("tr");
             for (Element row : rows) {
                 Elements columns = row.getElementsByTag("td");
@@ -79,21 +81,38 @@ public class PollenActivityService {
                         String name = divs.get(2).text();
                         String currentLevel = divs.get(4).getElementsByTag("img").attr("src");
                         String tomorrowLevel = divs.last().getElementsByTag("img").attr("src");
-                        listOfForecast.add(new Forecast(name, currentLevel, tomorrowLevel));
+                        listOfForecast.add(new Forecast(name, getForecastLevel(currentLevel), getForecastLevel(tomorrowLevel)));
                     }
                 }
             }
             data.put(key, listOfForecast);
         });
-
-        //TODO refactoring fucking ugly code
-        String date = getDateOfForecast(docs.values().stream().findFirst().get());
-        URI pathToFirebaseJson = this.getClass().getClassLoader().getResource("firebase.json").toURI();
-        Database database = new Database(pathToFirebaseJson);
-
-        data.forEach((s, forecasts) -> database.updateData(s, date, forecasts));
-
         return data;
+    }
+
+    String getForecastLevel(String input) {
+        String output;
+        switch (input) {
+            case "/images/pm/circle-0.png":
+                output = "nothing";
+                break;
+            case "/images/pm/circle-1.png":
+                output = "low";
+                break;
+            case "/images/pm/circle-2.png":
+                output = "medium";
+                break;
+            case "/images/pm/circle-3.png":
+                output = "high";
+                break;
+            case "/images/pm/circle-4.png":
+                output = "extra-high";
+                break;
+            default:
+                output = "unexpected value";
+                break;
+        }
+        return output;
     }
 
     String getDateOfForecast(Document doc) {
@@ -101,4 +120,5 @@ public class PollenActivityService {
         int beginIndex = dataOfForecast.indexOf(':') + 2;
         return dataOfForecast.substring(beginIndex, beginIndex + 10);
     }
+
 }
