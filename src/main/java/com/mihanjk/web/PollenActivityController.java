@@ -1,6 +1,8 @@
 package com.mihanjk.web;
 
+import com.mihanjk.model.Database;
 import com.mihanjk.model.Forecast;
+import com.mihanjk.services.NotificationService;
 import com.mihanjk.services.PollenActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,15 +15,30 @@ import java.util.Map;
 
 @RestController
 public class PollenActivityController {
-    @Autowired
-    private PollenActivityService pollenActivityService;
+    private final PollenActivityService pollenActivityService;
 
-    @RequestMapping("/getForecast")
+    @Autowired
+    public PollenActivityController(PollenActivityService pollenActivityService) {
+        this.pollenActivityService = pollenActivityService;
+    }
+
+    @RequestMapping("/getMoscowForecast")
     @Scheduled(fixedRate = 600000)
-//    public Map<String, List<Forecast>> getForecast(@RequestParam(value = "type", defaultValue = "all") String type)
-    public Map<String, List<Forecast>> getForecast()
-            throws Exception {
-        System.out.println("Execute request: " + Calendar.getInstance().getTime());
+    public Map<String, List<Forecast>> getForecast() throws Exception {
+        System.err.println("Execute request allergotop: " + Calendar.getInstance().getTime());
         return pollenActivityService.getForecastData();
+    }
+
+    @RequestMapping("/checkNNForecast")
+    @Scheduled(fixedRate = 660000)
+    public void createNNForecastTemplate() throws Exception {
+        System.err.println("Execute request: nikaNN" + Calendar.getInstance().getTime());
+        pollenActivityService.createTemplate();
+    }
+
+    @RequestMapping("/sendNotificationNN")
+    public String sendNNNotification() {
+        System.err.println("Send notification: " + Calendar.getInstance().getTime());
+        return NotificationService.sendNotification(Database.NN_PATH_DATABASE, pollenActivityService.getNNData());
     }
 }
