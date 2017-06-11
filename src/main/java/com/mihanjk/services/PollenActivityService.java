@@ -1,8 +1,7 @@
 package com.mihanjk.services;
 
-import com.mihanjk.model.Database;
-import com.mihanjk.model.Forecast;
-import com.mihanjk.model.ForecastNN;
+import com.mihanjk.model.AllergenMoscow;
+import com.mihanjk.model.AllergenNN;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,90 +19,99 @@ import java.util.Map;
 
 @Service
 public class PollenActivityService {
-    public static final String tree = "derevev";
-    public static final String cereal = "zlakov";
-    public static final String weed = "sornykh-trav";
-    public static final String spore = "sporonosheniya";
+    // TODO: 6/11/2017 maybe better use hashMap here?
+    public static final String SITE_TREE = "derevev";
+    public static final String SIRE_CEREAL = "zlakov";
+    public static final String SITE_WEED = "sornykh-trav";
+    public static final String SITE_SPORE = "sporonosheniya";
 
+    public static final String TREE = "Tree";
+    public static final String CEREAL = "Cereal";
+    public static final String WEED = "Weed";
+    public static final String SPORE = "Spore";
+
+    public static final String NOTHING = "Nothing";
+    public static final String LOW = "Low";
+    public static final String MEDIUM = "Medium";
+    public static final String HIGH = "High";
+    public static final String EXTRA_HIGH = "Extra high";
+    public static final String prefixMoscowSite = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
     private static final List<String> types = new ArrayList<>();
-    private static final List<ForecastNN> listZlakov = new ArrayList<>();
-    private static final List<ForecastNN> listSornykhTrav = new ArrayList<>();
-    private static final List<ForecastNN> listDerevev = new ArrayList<>();
-    private static final List<ForecastNN> listSporonosheniya = new ArrayList<>();
-    private static final Map<String, List<ForecastNN>> forecastNNTemplate = new HashMap<>();
+    private static final List<AllergenNN> cerealList = new ArrayList<>();
+    private static final List<AllergenNN> weedList = new ArrayList<>();
+    private static final List<AllergenNN> treeList = new ArrayList<>();
+    private static final List<AllergenNN> sporeList = new ArrayList<>();
+    private static final Map<String, List<AllergenNN>> forecastNNTemplate = new HashMap<>();
 
     static {
-        types.add(tree);
-        types.add(cereal);
-        types.add(weed);
-        types.add(spore);
+        types.add(SITE_TREE);
+        types.add(SIRE_CEREAL);
+        types.add(SITE_WEED);
+        types.add(SITE_SPORE);
 
-        String defaultLevel = "nothing";
-        listZlakov.add(new ForecastNN("ОБЩИЙ ФОН", defaultLevel, 0));
+        String defaultLevel = NOTHING;
+        cerealList.add(new AllergenNN("Общий фон", defaultLevel, 0));
 
-        listDerevev.add(new ForecastNN("ОЛЬХА", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ТОПОЛЬ", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ОРЕШНИК", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("БЕРЁЗА", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("СОСНА", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ЕЛЬ", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ВЯЗ", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ЛИПА", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("КЛЁН", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ЯСЕНЬ", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ИВА", defaultLevel, 0));
-        listDerevev.add(new ForecastNN("ДУБ", defaultLevel, 0));
+        treeList.add(new AllergenNN("Ольха", defaultLevel, 0));
+        treeList.add(new AllergenNN("Тополь", defaultLevel, 0));
+        treeList.add(new AllergenNN("Орешник", defaultLevel, 0));
+        treeList.add(new AllergenNN("Берёза", defaultLevel, 0));
+        treeList.add(new AllergenNN("Сосна", defaultLevel, 0));
+        treeList.add(new AllergenNN("Ель", defaultLevel, 0));
+        treeList.add(new AllergenNN("Вяз", defaultLevel, 0));
+        treeList.add(new AllergenNN("Липа", defaultLevel, 0));
+        treeList.add(new AllergenNN("Клён", defaultLevel, 0));
+        treeList.add(new AllergenNN("Ясень", defaultLevel, 0));
+        treeList.add(new AllergenNN("Ива", defaultLevel, 0));
+        treeList.add(new AllergenNN("Дуб", defaultLevel, 0));
 
-        listSornykhTrav.add(new ForecastNN("ПОЛЫНЬ", defaultLevel, 0));
-        listSornykhTrav.add(new ForecastNN("КРАПИВА", defaultLevel, 0));
-        listSornykhTrav.add(new ForecastNN("ПОДОРОЖНИК", defaultLevel, 0));
-        listSornykhTrav.add(new ForecastNN("ЩАВЕЛЬ", defaultLevel, 0));
-        listSornykhTrav.add(new ForecastNN("АМБРОЗИЯ", defaultLevel, 0));
-        listSornykhTrav.add(new ForecastNN("МАРЕВЫЕ", defaultLevel, 0));
+        weedList.add(new AllergenNN("Полынь", defaultLevel, 0));
+        weedList.add(new AllergenNN("Крапива", defaultLevel, 0));
+        weedList.add(new AllergenNN("Подорожник", defaultLevel, 0));
+        weedList.add(new AllergenNN("Щавель", defaultLevel, 0));
+        weedList.add(new AllergenNN("Амброзия", defaultLevel, 0));
+        weedList.add(new AllergenNN("Маревые", defaultLevel, 0));
 
-        listSporonosheniya.add(new ForecastNN("КЛАДОСПОРИУМ", defaultLevel, 0));
-        listSporonosheniya.add(new ForecastNN("АЛЬТЕРНАРИЯ", defaultLevel, 0));
+        sporeList.add(new AllergenNN("Кладоспориум", defaultLevel, 0));
+        sporeList.add(new AllergenNN("Альтернария", defaultLevel, 0));
 
-        forecastNNTemplate.put(cereal, listZlakov);
-        forecastNNTemplate.put(tree, listDerevev);
-        forecastNNTemplate.put(spore, listSporonosheniya);
-        forecastNNTemplate.put(weed, listSornykhTrav);
+        forecastNNTemplate.put(CEREAL, cerealList);
+        forecastNNTemplate.put(TREE, treeList);
+        forecastNNTemplate.put(SPORE, sporeList);
+        forecastNNTemplate.put(WEED, weedList);
     }
 
-    private String lastTitleOfPollenForecastNN;
+    public final String NNSite;
+    private String lastDateOfPollenForecastNN;
     private EmailService emailService;
-    //TODO check which of variable can be final
-    private Map<String, List<Forecast>> forecastData;
+    private Map<String, List<AllergenMoscow>> ForecastMoscow;
     private Map<String, Document> documents;
-    private Database database;
+    private DatabaseService databaseService;
 
     @Autowired
-    public PollenActivityService(EmailService emailService) {
+    public PollenActivityService(EmailService emailService, DatabaseService databaseService) throws UnsupportedEncodingException {
         this.emailService = emailService;
+        this.databaseService = databaseService;
+        NNSite = URLDecoder.decode("http://nika-nn.ru/%D0%BD%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8?page=0", "UTF-8");
     }
 
-    public Map<String, List<Forecast>> getForecastData() throws Exception {
+    public Map<String, List<AllergenMoscow>> getForecastMoscow() throws Exception {
         documents = getDocuments();
-        forecastData = parseForecastData();
+        ForecastMoscow = parseForecastData();
+        String date = getDateOfForecast(documents.get(SITE_TREE));
 
-        InputStream pathToFirebaseJson = getClass().getClassLoader().getResourceAsStream("firebase.json");
-        if (database == null) {
-            database = new Database(pathToFirebaseJson);
-        }
+        ForecastMoscow.forEach((typeOfForecast, forecasts) ->
+                databaseService.updateData(typeOfForecast, date, forecasts, DatabaseService.MOSCOW_PATH_DATABASE));
 
-        String date = getDateOfForecast(documents.get("derevev"));
-        forecastData.forEach((typeOfForecast, forecasts) ->
-                database.updateData(typeOfForecast, date, forecasts, Database.MOSCOW_PATH_DATABASE));
-        return forecastData;
+        return ForecastMoscow;
     }
 
     private Map<String, Document> getDocuments() throws Exception {
         Map<String, Document> docs = new HashMap<>();
-        String prefix = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
 
         types.forEach(typeOfPollen -> {
             try {
-                docs.put(typeOfPollen, Jsoup.connect(prefix + getSuffixOfURL(typeOfPollen)).get());
+                docs.put(typeOfPollen, Jsoup.connect(prefixMoscowSite + getSuffixOfURL(typeOfPollen)).get());
             } catch (IOException e) {
                 System.err.println(e.getMessage());
             }
@@ -112,14 +121,14 @@ public class PollenActivityService {
     }
 
     private String getSuffixOfURL(String typeOfPollen) {
-        return typeOfPollen.equals("sporonosheniya") ? typeOfPollen : "pyleniya-" + typeOfPollen;
+        return typeOfPollen.equals(SITE_SPORE) ? typeOfPollen : "pyleniya-" + typeOfPollen;
     }
 
-    Map<String, List<Forecast>> parseForecastData() {
-        // TODO make optimisation
-        Map<String, List<Forecast>> data = new HashMap<>();
+    Map<String, List<AllergenMoscow>> parseForecastData() {
+        // need view html code to understand this cycle
+        Map<String, List<AllergenMoscow>> data = new HashMap<>();
         documents.forEach((key, value) -> {
-            List<Forecast> listOfForecast = new ArrayList<>();
+            List<AllergenMoscow> listOfAllergenMoscow = new ArrayList<>();
             Element table = value.getElementsByTag("table").get(1);
             Elements rows = table.getElementsByTag("tr");
             for (Element row : rows) {
@@ -127,77 +136,150 @@ public class PollenActivityService {
                 for (Element column : columns) {
                     Elements divs = column.getElementsByTag("div");
                     if (!divs.isEmpty()) {
-                        String name = divs.get(2).text();
+                        String name = formatString(divs.get(2).text());
                         String currentLevel = divs.get(4).getElementsByTag("img").attr("src");
                         String tomorrowLevel = divs.last().getElementsByTag("img").attr("src");
-                        listOfForecast.add(new Forecast(name, getForecastLevel(currentLevel), getForecastLevel(tomorrowLevel)));
+                        listOfAllergenMoscow.add(new AllergenMoscow(name, getForecastLevel(currentLevel), getForecastLevel(tomorrowLevel)));
                     }
                 }
             }
-            data.put(key, listOfForecast);
+            data.put(getCategoryName(key), listOfAllergenMoscow);
         });
         return data;
+    }
+
+    // TODO: 6/11/2017 maybe need create utility class for this?
+
+    String formatString(String input) {
+        return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
     }
 
     String getForecastLevel(String input) {
         String output;
         switch (input) {
             case "/images/pm/circle-0.png":
-                output = "nothing";
+                output = NOTHING;
                 break;
             case "/images/pm/circle-1.png":
-                output = "low";
+                output = LOW;
                 break;
             case "/images/pm/circle-2.png":
-                output = "medium";
+                output = MEDIUM;
                 break;
             case "/images/pm/circle-3.png":
-                output = "high";
+                output = HIGH;
                 break;
             case "/images/pm/circle-4.png":
-                output = "extra-high";
+                output = EXTRA_HIGH;
                 break;
             default:
-                output = "unexpected value";
+                throw new IllegalArgumentException("Unexpected value");
+        }
+        return output;
+    }
+
+    String getCategoryName(String input) {
+        // TODO: 6/11/2017 how can i avoid code duplication?
+        String output;
+        switch (input) {
+            case SITE_TREE:
+                output = TREE;
                 break;
+            case SIRE_CEREAL:
+                output = CEREAL;
+                break;
+            case SITE_WEED:
+                output = WEED;
+                break;
+            case SITE_SPORE:
+                output = SPORE;
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected value");
         }
         return output;
     }
 
     String getDateOfForecast(Document doc) {
+        // Дата обновления информации: 2017-06-09 13:06:56 -> 2017-06-09
         String dataOfForecast = doc.getElementById("dateup").text();
         int beginIndex = dataOfForecast.indexOf(':') + 2;
         return dataOfForecast.substring(beginIndex, beginIndex + 10);
     }
 
-    public void createTemplate() throws IOException {
-        if (haveNewForecast()) {
-            //30.05.17
-            String notFormatDate = lastTitleOfPollenForecastNN.substring(lastTitleOfPollenForecastNN.length() - 8);
-            String date = "2017-" + notFormatDate.substring(3, 5) + "-" + notFormatDate.substring(0, 2);
-            forecastNNTemplate.forEach((typeOfForecast, forecasts) ->
-                    database.updateData(typeOfForecast, date, forecasts, Database.NN_PATH_DATABASE));
-            emailService.sendMailNotification("mihanjk@gmail.com",
-                    "Need to update database from nika.nn",
-                    "http://nika-nn.ru/%D0%BD%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8");
+
+    // TODO: 6/11/2017 maybe need divide into two classes for every city?
+
+    public void receiveRequestNN() throws IOException {
+        if (lastDateOfPollenForecastNN == null) {
+            getLastDateFromDatabase();
+        } else {
+            createTemplate(getNewForecastsDate());
         }
     }
 
-    private boolean haveNewForecast() throws IOException {
-        String link = "http://nika-nn.ru/";
-        Document document = Jsoup.connect(link).get();
-        String titleOfLastNews = document.getElementsByClass("last-news-list-item_title").get(0)
-                .getElementsByTag("a").text();
+    private void createTemplate(List<String> forecastDates) {
+        if (!forecastDates.isEmpty()) {
+            for (String date : forecastDates) {
+                forecastNNTemplate.forEach((category, forecasts) ->
+                        databaseService.updateData(category, date, forecasts, DatabaseService.NN_PATH_DATABASE));
 
-        if (titleOfLastNews.contains("ПЫЛЬЦЕВОЙ МОНИТОРИНГ") && !titleOfLastNews.equals(lastTitleOfPollenForecastNN)) {
-            lastTitleOfPollenForecastNN = titleOfLastNews;
-            return true;
+                emailService.sendMailNotification("mihanjk@gmail.com",
+                        "Need to update firebase database from news nika.nn " + date,
+                        "Get data from link:\n" +
+                                "http://nika-nn.ru/%D0%BD%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8\n" +
+                                "Insert data into database: \n" +
+                                "https://console.firebase.google.com/u/0/project/nopollen-24897/database/data\n" +
+                                "Then send notification to devices from link:\n" +
+                                "188.166.74.55:8080/sendNotificationNN");
+            }
+            lastDateOfPollenForecastNN = forecastDates.get(0);
         }
-
-        return false;
     }
 
-    public List<ForecastNN> getNNData() {
-        return database.getData();
+    // TODO: 6/11/2017 find news pollen
+
+    private List<String> getNewForecastsDate() throws IOException {
+        Elements newsTitles = Jsoup.connect(NNSite).get().getElementsByClass("last-news-list-item_title");
+        List<String> result = new ArrayList<>();
+
+        // TODO: 6/11/2017 refactoring
+        for (Element titleElement : newsTitles) {
+            String title = titleElement.getElementsByTag("a").text();
+
+            if (title.contains("ПЫЛЬЦЕВОЙ МОНИТОРИНГ")) {
+                String dateFromTitle = getDateFromTitle(title);
+                if (!dateFromTitle.equals(lastDateOfPollenForecastNN)) {
+                    result.add(dateFromTitle);
+                } else {
+                    // TODO: 6/11/2017 develop if all news from page not equals to last page, take next page
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private String getDateFromTitle(String title) {
+        //ПЫЛЬЦЕВОЙ МОНИТОРИНГ ОТ 30.05.17 -> 2017-05-30
+        String notFormatDate = title.substring(title.length() - 8);
+        return "20" + notFormatDate.substring(notFormatDate.length() - 2) + "-"
+                + notFormatDate.substring(3, 5) + "-" + notFormatDate.substring(0, 2);
+    }
+
+    private void getLastDateFromDatabase() {
+        databaseService.getDateOfLastRecordNN(this);
+    }
+
+    void setLastDateFromDatabase(String date) throws IOException {
+        if (date == null) {
+            throw new IllegalArgumentException("Date not found in database. Can't detect breakpoint for algorithm");
+        }
+        lastDateOfPollenForecastNN = date;
+        createTemplate(getNewForecastsDate());
+    }
+
+    public List<AllergenNN> getNNData() {
+        return databaseService.getDataForNotification();
     }
 }

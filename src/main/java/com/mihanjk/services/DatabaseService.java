@@ -1,27 +1,36 @@
-package com.mihanjk.model;
+package com.mihanjk.services;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseCredentials;
 import com.google.firebase.database.*;
-import com.mihanjk.services.NotificationService;
+import com.mihanjk.model.AllergenNN;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Database {
-    public static final String MOSCOW_PATH_DATABASE = "moscow";
+@Service
+public class DatabaseService {
+    public static final String MOSCOW_PATH_DATABASE = "Moscow";
     public static final String NN_PATH_DATABASE = "NN";
     private static final String DATABASE_URL = "https://nopollen-24897.firebaseio.com/";
     private final InputStream pathToFirebaseJson;
 
+    FirebaseDatabase database;
+
     @Autowired
-    public Database(InputStream path) {
-        pathToFirebaseJson = path;
+    public DatabaseService() {
+        pathToFirebaseJson = getClass().getClassLoader().getResourceAsStream("firebase.json");
+        if (FirebaseApp.getApps().isEmpty()) {
+            createDatabaseApp();
+        }
     }
 
+    // TODO: 6/11/2017 try move it into constructor
     void createDatabaseApp() {
         FirebaseOptions options = new FirebaseOptions.Builder()
                 .setCredential(FirebaseCredentials.fromCertificate(pathToFirebaseJson))
@@ -29,14 +38,12 @@ public class Database {
                 .build();
 
         FirebaseApp.initializeApp(options);
+
+        database = FirebaseDatabase.getInstance();
     }
 
     public <T> void updateData(String type, String date, List<T> data, String city) {
-        if (FirebaseApp.getApps().isEmpty()) {
-            createDatabaseApp();
-        }
 
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference ref = database.getReference(city).child(date).child(type);
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -56,10 +63,9 @@ public class Database {
         });
     }
 
-    public List<ForecastNN> getData() {
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
+    public List<AllergenNN> getDataForNotification() {
         DatabaseReference ref = database.getReference(NN_PATH_DATABASE);
-        List<ForecastNN> result = new ArrayList<>();
+        List<AllergenNN> result = new ArrayList<>();
 
         final Query query = ref.orderByKey().limitToLast(1);
         query.addValueEventListener(new ValueEventListener() {
@@ -68,7 +74,7 @@ public class Database {
                 for (DataSnapshot date : dataSnapshot.getChildren()) {
                     for (DataSnapshot group : date.getChildren()) {
                         for (DataSnapshot allergen : group.getChildren()) {
-                            ForecastNN value = allergen.getValue(ForecastNN.class);
+                            AllergenNN value = allergen.getValue(AllergenNN.class);
                             result.add(value);
                         }
                     }
@@ -82,5 +88,25 @@ public class Database {
         });
 
         return result;
+    }
+
+    public void getDateOfLastRecordNN(PollenActivityService service) {
+        database.getReference(NN_PATH_DATABASE).orderByKey().limitToLast(1).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot dateSnapshot : dataSnapshot.getChildren()) {
+                    try {
+                        service.setLastDateFromDatabase(dateSnapshot.getKey());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                System.err.println(databaseError.getMessage());
+            }
+        });
     }
 }

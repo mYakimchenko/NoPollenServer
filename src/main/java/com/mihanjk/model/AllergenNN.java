@@ -1,14 +1,14 @@
 package com.mihanjk.model;
 
-public class ForecastNN {
+public class AllergenNN {
     private String name;
     private String currentLevel;
     private int concentration;
 
-    public ForecastNN() {
+    public AllergenNN() {
     }
 
-    public ForecastNN(String name, String currentLevel, int concentration) {
+    public AllergenNN(String name, String currentLevel, int concentration) {
         this.name = name;
         this.currentLevel = currentLevel;
         this.concentration = concentration;

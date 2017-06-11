@@ -14,12 +14,11 @@ public class EmailService {
         this.javaMailSender = javaMailSender;
     }
 
-    public void sendMailNotification(String toEmail, String subject, String message) {
+    void sendMailNotification(String toEmail, String subject, String message) {
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setTo(toEmail);
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
-        mailMessage.setFrom("admin@mihanjk.com");
         javaMailSender.send(mailMessage);
     }
 }
