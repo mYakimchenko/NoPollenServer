@@ -224,7 +224,7 @@ public class PollenActivityService {
                 forecastNNTemplate.forEach((category, forecasts) ->
                         databaseService.updateData(category, date, forecasts, DatabaseService.NN_PATH_DATABASE));
 
-                emailService.sendMailNotification("mihanjk@gmail.com",
+                emailService.sendMailNotification("mihanjk@mail.ru",
                         "Need to update firebase database from news nika.nn " + date,
                         "Get data from link:\n" +
                                 "http://nika-nn.ru/%D0%BD%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8\n" +
@@ -247,7 +247,7 @@ public class PollenActivityService {
         for (Element titleElement : newsTitles) {
             String title = titleElement.getElementsByTag("a").text();
 
-            if (title.contains("ПЫЛЬЦЕВОЙ МОНИТОРИНГ")) {
+            if (title.toUpperCase().contains("ПЫЛЬЦЕВОЙ МОНИТОРИНГ")) {
                 String dateFromTitle = getDateFromTitle(title);
                 if (!dateFromTitle.equals(lastDateOfPollenForecastNN)) {
                     result.add(dateFromTitle);
@@ -261,8 +261,15 @@ public class PollenActivityService {
     }
 
     private String getDateFromTitle(String title) {
-        //ПЫЛЬЦЕВОЙ МОНИТОРИНГ ОТ 30.05.17 -> 2017-05-30
-        String notFormatDate = title.substring(title.length() - 8);
+        String notFormatDate;
+        //Пыльцевой мониторинг от 15.06.17 г.
+        if (title.contains("г.")) {
+            notFormatDate = title.substring(title.length() - 11, title.length() - 3);
+        } else {
+            //ПЫЛЬЦЕВОЙ МОНИТОРИНГ ОТ 30.05.17 -> 2017-05-30
+            notFormatDate = title.substring(title.length() - 8);
+        }
+
         return "20" + notFormatDate.substring(notFormatDate.length() - 2) + "-"
                 + notFormatDate.substring(3, 5) + "-" + notFormatDate.substring(0, 2);
     }
