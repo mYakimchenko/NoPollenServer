@@ -63,12 +63,12 @@ public class DatabaseService {
         });
     }
 
-    public List<AllergenNN> getDataForNotification() {
+    public void getDataForNotificationAndSendIt() {
         DatabaseReference ref = database.getReference(NN_PATH_DATABASE);
         List<AllergenNN> result = new ArrayList<>();
 
         final Query query = ref.orderByKey().limitToLast(1);
-        query.addValueEventListener(new ValueEventListener() {
+        query.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot date : dataSnapshot.getChildren()) {
@@ -79,6 +79,7 @@ public class DatabaseService {
                         }
                     }
                 }
+                NotificationService.sendNotification(DatabaseService.NN_PATH_DATABASE, result);
             }
 
             @Override
@@ -86,8 +87,6 @@ public class DatabaseService {
                 System.err.println(databaseError.getMessage());
             }
         });
-
-        return result;
     }
 
     public void getDateOfLastRecordNN(PollenActivityService service) {

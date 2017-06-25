@@ -1,5 +1,7 @@
 package com.mihanjk.services;
 
+import com.mihanjk.model.AllergenMoscow;
+import com.mihanjk.model.AllergenNN;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -15,9 +17,6 @@ public class NotificationService {
     private static final String KEY = "key=AAAAI2MXccI:APA91bF7AR7SC9xtIVwBj_3Lh8vYNg1isizAj-DjgBp_3prO_WDPgD7WrXMd1ZQcFQ2Da9CSM-prkipPVcmhoyaAAwPe25JMlk9uoFEygPZSwM7tXhCUMiw4tpdQ9eeiv6bB69KOWfaa";
     private static HttpClient client = HttpClientBuilder.create().build();
 
-    private NotificationService() {
-    }
-
     public static <T> String sendNotification(String city, List<T> data) {
         HttpPost post = new HttpPost("https://fcm.googleapis.com/fcm/send");
         post.setHeader("Content-type", "application/json");
@@ -25,7 +24,11 @@ public class NotificationService {
 
         JSONObject notification = new JSONObject();
         notification.put("to", "/topics/" + city);
-        notification.put("data", new JSONObject(data));
+        if (city.equals(DatabaseService.MOSCOW_PATH_DATABASE)) {
+            notification.put("data", getMoscowJson((List<AllergenMoscow>) data));
+        } else {
+            notification.put("data", getNNJson((List<AllergenNN>) data));
+        }
 
         post.setEntity(new StringEntity(notification.toString(), "UTF-8"));
 
@@ -40,5 +43,22 @@ public class NotificationService {
         } catch (IOException e) {
             return "Problem with executing http request" + e.getMessage();
         }
+    }
+
+    private static JSONObject getMoscowJson(List<AllergenMoscow> data) {
+        JSONObject result = new JSONObject();
+        for (AllergenMoscow object : data) {
+            result.append(object.getName(), object.getCurrentLevel());
+        }
+        return result;
+    }
+
+    private static JSONObject getNNJson(List<AllergenNN> data) {
+        JSONObject result = new JSONObject();
+        for (AllergenNN object : data) {
+            // TODO: 6/25/2017 why value become an array?
+            result.append(object.getName(), object.getCurrentLevel());
+        }
+        return result;
     }
 }

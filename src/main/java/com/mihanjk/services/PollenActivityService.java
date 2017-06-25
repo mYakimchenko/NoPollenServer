@@ -285,8 +285,4 @@ public class PollenActivityService {
         lastDateOfPollenForecastNN = date;
         createTemplate(getNewForecastsDate());
     }
-
-    public List<AllergenNN> getNNData() {
-        return databaseService.getDataForNotification();
-    }
 }

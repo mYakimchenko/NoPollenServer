@@ -2,7 +2,6 @@ package com.mihanjk.web;
 
 import com.mihanjk.model.AllergenMoscow;
 import com.mihanjk.services.DatabaseService;
-import com.mihanjk.services.NotificationService;
 import com.mihanjk.services.PollenActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,10 +15,12 @@ import java.util.Map;
 @RestController
 public class PollenActivityController {
     private final PollenActivityService pollenActivityService;
+    private final DatabaseService databaseService;
 
     @Autowired
-    public PollenActivityController(PollenActivityService pollenActivityService) {
+    public PollenActivityController(PollenActivityService pollenActivityService, DatabaseService databaseService) {
         this.pollenActivityService = pollenActivityService;
+        this.databaseService = databaseService;
     }
 
     @RequestMapping("/getMoscowForecast")
@@ -37,8 +38,8 @@ public class PollenActivityController {
     }
 
     @RequestMapping("/sendNotificationNN")
-    public String sendNotificationNN() {
+    public void sendNotificationNN() {
         System.err.println("Send notification: " + Calendar.getInstance().getTime());
-        return NotificationService.sendNotification(DatabaseService.NN_PATH_DATABASE, pollenActivityService.getNNData());
+        databaseService.getDataForNotificationAndSendIt();
     }
 }
