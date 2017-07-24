@@ -132,7 +132,7 @@ public class PollenActivityService {
             Element table = value.getElementsByTag("table").get(1);
             Elements rows = table.getElementsByTag("tr");
             for (Element row : rows) {
-                Elements columns = row.getElementsByTag("td");
+                Elements columns = row.select("td[align='center']");
                 for (Element column : columns) {
                     Elements divs = column.getElementsByTag("div");
                     if (!divs.isEmpty()) {
@@ -142,8 +142,8 @@ public class PollenActivityService {
                         listOfAllergenMoscow.add(new AllergenMoscow(name, getForecastLevel(currentLevel), getForecastLevel(tomorrowLevel)));
                     }
                 }
+                data.put(getCategoryName(key), listOfAllergenMoscow);
             }
-            data.put(getCategoryName(key), listOfAllergenMoscow);
         });
         return data;
     }
@@ -157,19 +157,19 @@ public class PollenActivityService {
     String getForecastLevel(String input) {
         String output;
         switch (input) {
-            case "/images/pm/circle-0.png":
+            case "/images/pm/00.png":
                 output = NOTHING;
                 break;
-            case "/images/pm/circle-1.png":
+            case "/images/pm/01.png":
                 output = LOW;
                 break;
-            case "/images/pm/circle-2.png":
+            case "/images/pm/02.png":
                 output = MEDIUM;
                 break;
-            case "/images/pm/circle-3.png":
+            case "/images/pm/03.png":
                 output = HIGH;
                 break;
-            case "/images/pm/circle-4.png":
+            case "/images/pm/04.png":
                 output = EXTRA_HIGH;
                 break;
             default:
