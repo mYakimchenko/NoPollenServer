@@ -50,6 +50,7 @@ public class DatabaseService {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (!dataSnapshot.exists()) {
                     ref.setValue(data);
+                    // TODO: 7/26/2017 this send many notification
                     if (city.equals(MOSCOW_PATH_DATABASE)) {
                         NotificationService.sendNotification(city, data);
                     }

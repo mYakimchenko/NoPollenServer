@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +22,10 @@ import java.util.Map;
 
 @Service
 public class PollenActivityService {
+    public static final String TODAY = "сегодня";
     // TODO: 6/11/2017 maybe better use hashMap here?
+    private final ZoneId moscowZone = ZoneId.of("Europe/Moscow");
+
     public static final String SITE_TREE = "derevev";
     public static final String SIRE_CEREAL = "zlakov";
     public static final String SITE_WEED = "sornykh-trav";
@@ -35,7 +41,10 @@ public class PollenActivityService {
     public static final String MEDIUM = "Medium";
     public static final String HIGH = "High";
     public static final String EXTRA_HIGH = "Extra high";
+
     public static final String prefixMoscowSite = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
     private static final List<String> types = new ArrayList<>();
     private static final List<AllergenNN> cerealList = new ArrayList<>();
     private static final List<AllergenNN> weedList = new ArrayList<>();
@@ -129,7 +138,7 @@ public class PollenActivityService {
         Map<String, List<AllergenMoscow>> data = new HashMap<>();
         documents.forEach((key, value) -> {
             List<AllergenMoscow> listOfAllergenMoscow = new ArrayList<>();
-            Element table = value.getElementsByTag("table").get(1);
+            Element table = value.getElementsByTag("table").get(0);
             Elements rows = table.getElementsByTag("tr");
             for (Element row : rows) {
                 Elements columns = row.select("td[align='center']");
@@ -202,8 +211,12 @@ public class PollenActivityService {
 
     String getDateOfForecast(Document doc) {
         // Дата обновления информации: 2017-06-09 13:06:56 -> 2017-06-09
-        String dataOfForecast = doc.getElementById("dateup").text();
+        String dataOfForecast = doc.getElementsByClass("col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center")
+                .get(0).getElementsByTag("p").get(0).text();
         int beginIndex = dataOfForecast.indexOf(':') + 2;
+        if (dataOfForecast.contains(TODAY)) {
+            return dateFormatter.format(LocalDate.now());
+        }
         return dataOfForecast.substring(beginIndex, beginIndex + 10);
     }
 
