@@ -23,6 +23,7 @@ import java.util.Map;
 @Service
 public class PollenActivityService {
     public static final String TODAY = "сегодня";
+    public static final String YESTERDAY = "вчера";
     // TODO: 6/11/2017 maybe better use hashMap here?
     private final ZoneId moscowZone = ZoneId.of("Europe/Moscow");
 
@@ -212,11 +213,18 @@ public class PollenActivityService {
     String getDateOfForecast(Document doc) {
         // Дата обновления информации: 2017-06-09 13:06:56 -> 2017-06-09
         String dataOfForecast = doc.getElementsByClass("col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center")
-                .get(0).getElementsByTag("p").get(0).text();
+                .get(0).getElementsByTag("p").get(0).text().toLowerCase();
         int beginIndex = dataOfForecast.indexOf(':') + 2;
+
         if (dataOfForecast.contains(TODAY)) {
             return dateFormatter.format(LocalDate.now());
         }
+
+        // TODO: 7/27/2017 test it
+        if (dataOfForecast.contains(YESTERDAY)) {
+            return dateFormatter.format(LocalDate.now().minusDays(1));
+        }
+
         return dataOfForecast.substring(beginIndex, beginIndex + 10);
     }
 
