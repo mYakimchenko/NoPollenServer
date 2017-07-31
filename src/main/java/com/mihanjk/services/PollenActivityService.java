@@ -12,13 +12,13 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.text.DateFormatSymbols;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class PollenActivityService {
@@ -45,6 +45,7 @@ public class PollenActivityService {
 
     public static final String prefixMoscowSite = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(new Locale("ru", "RU"));
 
     private static final List<String> types = new ArrayList<>();
     private static final List<AllergenNN> cerealList = new ArrayList<>();
@@ -103,6 +104,20 @@ public class PollenActivityService {
         this.emailService = emailService;
         this.databaseService = databaseService;
         NNSite = URLDecoder.decode("http://nika-nn.ru/%D0%BD%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8?page=0", "UTF-8");
+        dateFormatSymbols.setMonths(new String[]{
+                "Января",
+                "Февраля",
+                "Марта",
+                "Апреля",
+                "Мая",
+                "Июня",
+                "Июля",
+                "Августа",
+                "Сентября",
+                "Октября",
+                "Ноября",
+                "Декабря"
+        });
     }
 
     public Map<String, List<AllergenMoscow>> getForecastMoscow() throws Exception {
@@ -210,22 +225,27 @@ public class PollenActivityService {
         return output;
     }
 
-    String getDateOfForecast(Document doc) {
-        // Дата обновления информации: 2017-06-09 13:06:56 -> 2017-06-09
+    String getDateOfForecast(Document doc) throws ParseException {
+        // Дата обновления информации: 28 Июля 2017 -> 2017-07-28
+        // Дата обновления информации: сегодня, 13:26 -> 2017-07-28
+        // Дата обновления информации: вчера, 13:26 -> 2017-07-28
         String dataOfForecast = doc.getElementsByClass("col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center")
                 .get(0).getElementsByTag("p").get(0).text().toLowerCase();
         int beginIndex = dataOfForecast.indexOf(':') + 2;
 
         if (dataOfForecast.contains(TODAY)) {
-            return dateFormatter.format(LocalDate.now());
+            return dateFormatter.format(LocalDate.now(moscowZone));
         }
 
         // TODO: 7/27/2017 test it
         if (dataOfForecast.contains(YESTERDAY)) {
-            return dateFormatter.format(LocalDate.now().minusDays(1));
+            return dateFormatter.format(LocalDate.now(moscowZone).minusDays(1));
         }
 
-        return dataOfForecast.substring(beginIndex, beginIndex + 10);
+        // TODO: 7/31/2017 test it
+        String date = dataOfForecast.substring(beginIndex).trim();
+        Date parse = new SimpleDateFormat("dd MMMMM yyyy", dateFormatSymbols).parse(date);
+        return new SimpleDateFormat("yyyy-MM-dd").format(parse);
     }
 
 
