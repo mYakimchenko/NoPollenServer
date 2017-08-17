@@ -15,8 +15,8 @@ import java.util.List;
 
 @Service
 public class DatabaseService {
-    public static final String MOSCOW_PATH_DATABASE = "Moscow";
-    public static final String NN_PATH_DATABASE = "NN";
+    public static final String MOSCOW = "Moscow";
+    public static final String NN = "NN";
     private static final String DATABASE_URL = "https://nopollen-24897.firebaseio.com/";
     private final InputStream pathToFirebaseJson;
 
@@ -51,7 +51,7 @@ public class DatabaseService {
                 if (!dataSnapshot.exists()) {
                     ref.setValue(data);
                     // TODO: 7/26/2017 this send many notification
-                    if (city.equals(MOSCOW_PATH_DATABASE)) {
+                    if (city.equals(MOSCOW)) {
                         NotificationService.sendNotification(city, data);
                     }
                 }
@@ -65,7 +65,7 @@ public class DatabaseService {
     }
 
     public void getDataForNotificationAndSendIt() {
-        DatabaseReference ref = database.getReference(NN_PATH_DATABASE);
+        DatabaseReference ref = database.getReference(NN);
         List<AllergenNN> result = new ArrayList<>();
 
         final Query query = ref.orderByKey().limitToLast(1);
@@ -80,7 +80,7 @@ public class DatabaseService {
                         }
                     }
                 }
-                NotificationService.sendNotification(DatabaseService.NN_PATH_DATABASE, result);
+                NotificationService.sendNotification(DatabaseService.NN, result);
             }
 
             @Override
@@ -91,7 +91,7 @@ public class DatabaseService {
     }
 
     public void getDateOfLastRecordNN(PollenActivityService service) {
-        database.getReference(NN_PATH_DATABASE).orderByKey().limitToLast(1).addListenerForSingleValueEvent(new ValueEventListener() {
+        database.getReference(NN).orderByKey().limitToLast(1).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot dateSnapshot : dataSnapshot.getChildren()) {

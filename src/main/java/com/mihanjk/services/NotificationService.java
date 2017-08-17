@@ -15,7 +15,7 @@ import java.util.List;
 
 public class NotificationService {
     private static final String KEY = "key=AAAAI2MXccI:APA91bF7AR7SC9xtIVwBj_3Lh8vYNg1isizAj-DjgBp_3prO_WDPgD7WrXMd1ZQcFQ2Da9CSM-prkipPVcmhoyaAAwPe25JMlk9uoFEygPZSwM7tXhCUMiw4tpdQ9eeiv6bB69KOWfaa";
-    private static HttpClient client = HttpClientBuilder.create().build();
+    private static final HttpClient client = HttpClientBuilder.create().build();
 
     public static <T> String sendNotification(String city, List<T> data) {
         HttpPost post = new HttpPost("https://fcm.googleapis.com/fcm/send");
@@ -24,10 +24,13 @@ public class NotificationService {
 
         JSONObject notification = new JSONObject();
         notification.put("to", "/topics/" + city);
-        if (city.equals(DatabaseService.MOSCOW_PATH_DATABASE)) {
+
+        if (city.equals(DatabaseService.MOSCOW)) {
             notification.put("data", getMoscowJson((List<AllergenMoscow>) data));
-        } else {
+        } else if (city.equals(DatabaseService.NN)) {
             notification.put("data", getNNJson((List<AllergenNN>) data));
+        } else {
+            throw new IllegalArgumentException("Incorrect city topic");
         }
 
         post.setEntity(new StringEntity(notification.toString(), "UTF-8"));
@@ -35,15 +38,26 @@ public class NotificationService {
         try {
             HttpResponse response = client.execute(post);
             String responseData = EntityUtils.toString(response.getEntity());
+
             if (responseData.contains("message_id")) {
-                return "Operation success" + responseData;
+                return "Operation success: " + responseData;
             } else {
-                return "Operation failed cause " + responseData;
+                return "Operation failed: " + responseData;
             }
         } catch (IOException e) {
-            return "Problem with executing http request" + e.getMessage();
+            return "Problem with executing http request: " + e.getMessage();
         }
     }
+
+//    private static <T> JSONObject getJsonFromForecast(List<T> data) {
+//        if (data instanceof AllergenMoscow) {
+//
+//        } else if (data instanceof AllergenNN) {
+//
+//        } else {
+//            throw new IllegalArgumentException("Incorrect type of forecast data");
+//        }
+//    }
 
     private static JSONObject getMoscowJson(List<AllergenMoscow> data) {
         JSONObject result = new JSONObject();

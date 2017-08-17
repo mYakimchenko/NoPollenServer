@@ -22,28 +22,29 @@ import java.util.*;
 
 @Service
 public class PollenActivityService {
-    public static final String TODAY = "сегодня";
-    public static final String YESTERDAY = "вчера";
+    private static final String TODAY = "сегодня";
+    private static final String YESTERDAY = "вчера";
     // TODO: 6/11/2017 maybe better use hashMap here?
     private final ZoneId moscowZone = ZoneId.of("Europe/Moscow");
 
-    public static final String SITE_TREE = "derevev";
-    public static final String SIRE_CEREAL = "zlakov";
-    public static final String SITE_WEED = "sornykh-trav";
-    public static final String SITE_SPORE = "sporonosheniya";
+    private static final String SITE_TREE = "derevev";
+    private static final String SIRE_CEREAL = "zlakov";
+    private static final String SITE_WEED = "sornykh-trav";
+    private static final String SITE_SPORE = "sporonosheniya";
 
-    public static final String TREE = "Tree";
-    public static final String CEREAL = "Cereal";
-    public static final String WEED = "Weed";
-    public static final String SPORE = "Spore";
+    private static final String TREE = "Tree";
+    private static final String CEREAL = "Cereal";
+    private static final String WEED = "Weed";
+    private static final String SPORE = "Spore";
 
-    public static final String NOTHING = "Nothing";
-    public static final String LOW = "Low";
-    public static final String MEDIUM = "Medium";
-    public static final String HIGH = "High";
-    public static final String EXTRA_HIGH = "Extra high";
+    private static final String NOTHING = "Nothing";
+    private static final String LOW = "Low";
+    private static final String MEDIUM = "Medium";
+    private static final String HIGH = "High";
+    private static final String EXTRA_HIGH = "Extra high";
 
-    public static final String prefixMoscowSite = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
+    private static final String PREFIX_MOSCOW_SITE = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
+
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(new Locale("ru", "RU"));
 
@@ -92,7 +93,7 @@ public class PollenActivityService {
         forecastNNTemplate.put(WEED, weedList);
     }
 
-    public final String NNSite;
+    private final String NNSite;
     private String lastDateOfPollenForecastNN;
     private EmailService emailService;
     private Map<String, List<AllergenMoscow>> ForecastMoscow;
@@ -126,7 +127,7 @@ public class PollenActivityService {
         String date = getDateOfForecast(documents.get(SITE_TREE));
 
         ForecastMoscow.forEach((typeOfForecast, forecasts) ->
-                databaseService.updateData(typeOfForecast, date, forecasts, DatabaseService.MOSCOW_PATH_DATABASE));
+                databaseService.updateData(typeOfForecast, date, forecasts, DatabaseService.MOSCOW));
 
         return ForecastMoscow;
     }
@@ -136,7 +137,7 @@ public class PollenActivityService {
 
         types.forEach(typeOfPollen -> {
             try {
-                docs.put(typeOfPollen, Jsoup.connect(prefixMoscowSite + getSuffixOfURL(typeOfPollen)).get());
+                docs.put(typeOfPollen, Jsoup.connect(PREFIX_MOSCOW_SITE + getSuffixOfURL(typeOfPollen)).get());
             } catch (IOException e) {
                 System.err.println(e.getMessage());
             }
@@ -263,7 +264,7 @@ public class PollenActivityService {
         if (!forecastDates.isEmpty()) {
             for (String date : forecastDates) {
                 forecastNNTemplate.forEach((category, forecasts) ->
-                        databaseService.updateData(category, date, forecasts, DatabaseService.NN_PATH_DATABASE));
+                        databaseService.updateData(category, date, forecasts, DatabaseService.NN));
 
                 emailService.sendMailNotification("mihanjk@mail.ru",
                         "Need to update firebase database from news nika.nn " + date,
@@ -304,7 +305,7 @@ public class PollenActivityService {
     private String getDateFromTitle(String title) {
         String notFormatDate;
         //Пыльцевой мониторинг от 15.06.17 г.
-        if (title.contains("г.")) {
+        if (title.contains("Г.")) {
             notFormatDate = title.substring(title.length() - 11, title.length() - 3);
         } else {
             //ПЫЛЬЦЕВОЙ МОНИТОРИНГ ОТ 30.05.17 -> 2017-05-30
