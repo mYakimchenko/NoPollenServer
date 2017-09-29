@@ -27,10 +27,10 @@ public class PollenActivityService {
     // TODO: 6/11/2017 maybe better use hashMap here?
     private final ZoneId moscowZone = ZoneId.of("Europe/Moscow");
 
-    private static final String SITE_TREE = "derevev";
-    private static final String SIRE_CEREAL = "zlakov";
-    private static final String SITE_WEED = "sornykh-trav";
-    private static final String SITE_SPORE = "sporonosheniya";
+    private static final String SITE_TREE = "derevya";
+    private static final String SIRE_CEREAL = "zlaki";
+    private static final String SITE_WEED = "sornye-travy";
+    private static final String SITE_SPORE = "sporonoshenie";
 
     private static final String TREE = "Tree";
     private static final String CEREAL = "Cereal";
@@ -43,7 +43,7 @@ public class PollenActivityService {
     private static final String HIGH = "High";
     private static final String EXTRA_HIGH = "Extra high";
 
-    private static final String PREFIX_MOSCOW_SITE = "http://allergotop.com/pyltsevoj-monitoring/prognoz-urovnya-";
+    private static final String PREFIX_MOSCOW_SITE = "https://allergotop.com/pyltsevoj-monitoring/";
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateFormatSymbols dateFormatSymbols = new DateFormatSymbols(new Locale("ru", "RU"));
@@ -137,17 +137,13 @@ public class PollenActivityService {
 
         types.forEach(typeOfPollen -> {
             try {
-                docs.put(typeOfPollen, Jsoup.connect(PREFIX_MOSCOW_SITE + getSuffixOfURL(typeOfPollen)).get());
+                docs.put(typeOfPollen, Jsoup.connect(PREFIX_MOSCOW_SITE + typeOfPollen).get());
             } catch (IOException e) {
                 System.err.println(e.getMessage());
             }
         });
 
         return docs;
-    }
-
-    private String getSuffixOfURL(String typeOfPollen) {
-        return typeOfPollen.equals(SITE_SPORE) ? typeOfPollen : "pyleniya-" + typeOfPollen;
     }
 
     Map<String, List<AllergenMoscow>> parseForecastData() {
